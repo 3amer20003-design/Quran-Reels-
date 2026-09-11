@@ -1,0 +1,6 @@
+{
+  "name": "Quran Reels AI Builder",
+  "description": "منصة لإنشاء فيديوهات قرآنية قصيرة (ريلز) مدعومة بالذكاء الاصطناعي مع مزامنة الكلمات وتفاسير معتمدة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
