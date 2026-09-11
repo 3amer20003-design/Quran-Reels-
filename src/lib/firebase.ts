@@ -23,8 +23,10 @@ export async function initFirebase() {
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
+    return true;
   } catch (e) {
     console.warn("Firebase config not found, skipping init for now.", e);
+    return false;
   }
 }
 

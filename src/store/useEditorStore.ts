@@ -3,8 +3,8 @@ import { EditorState, Surah, Reciter, Verse } from '../types';
 
 interface EditorActions {
   setSelectedSurah: (surah: Surah | null) => void;
-  setSelectedStartVerse: (num: number) => void;
-  setSelectedEndVerse: (num: number) => void;
+  setSelectedStartVerse: (num: number | '') => void;
+  setSelectedEndVerse: (num: number | '') => void;
   setSelectedReciter: (reciter: Reciter | null) => void;
   setVerses: (verses: Verse[]) => void;
   setFontFamily: (font: string) => void;
@@ -19,8 +19,8 @@ interface EditorActions {
 
 export const useEditorStore = create<EditorState & EditorActions>((set) => ({
   selectedSurah: null,
-  selectedStartVerse: 1,
-  selectedEndVerse: 1,
+  selectedStartVerse: '',
+  selectedEndVerse: '',
   selectedReciter: null,
   verses: [],
   
@@ -34,7 +34,7 @@ export const useEditorStore = create<EditorState & EditorActions>((set) => ({
   backgroundMediaType: 'video',
   overlayTextType: 'none',
   
-  setSelectedSurah: (surah) => set({ selectedSurah: surah, selectedStartVerse: 1, selectedEndVerse: 1 }),
+  setSelectedSurah: (surah) => set({ selectedSurah: surah, selectedStartVerse: '', selectedEndVerse: '' }),
   setSelectedStartVerse: (num) => set({ selectedStartVerse: num }),
   setSelectedEndVerse: (num) => set({ selectedEndVerse: num }),
   setSelectedReciter: (reciter) => set({ selectedReciter: reciter }),

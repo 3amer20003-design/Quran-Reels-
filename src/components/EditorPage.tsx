@@ -20,12 +20,25 @@ export default function EditorPage() {
 
   const handleApplySelection = async () => {
     if (!store.selectedSurah || !store.selectedReciter) return;
+    if (store.selectedStartVerse === '' || store.selectedEndVerse === '') {
+      alert('الرجاء إدخال رقم آية البداية والنهاية قبل جلب البيانات');
+      return;
+    }
+
+    const startNum = Number(store.selectedStartVerse);
+    const endNum = Number(store.selectedEndVerse);
+
+    if (isNaN(startNum) || isNaN(endNum) || startNum < 1 || endNum < startNum || endNum > store.selectedSurah.verses_count) {
+      alert(`الرجاء إدخال نطاق آيات صحيح (بين 1 و ${store.selectedSurah.verses_count})، على أن تكون آية البداية أصغر من أو تساوي آية النهاية`);
+      return;
+    }
+
     setIsLoadingVerses(true);
     try {
       const verses = await fetchVerses(
         store.selectedSurah.id,
-        store.selectedStartVerse,
-        store.selectedEndVerse,
+        startNum,
+        endNum,
         store.selectedReciter.id
       );
       store.setVerses(verses);
@@ -68,11 +81,17 @@ export default function EditorPage() {
                 <label className="block text-sm mb-1 text-neutral-400">من آية</label>
                 <input 
                   type="number" min="1" max={store.selectedSurah?.verses_count || 1}
+                  placeholder="البداية"
                   className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-2 outline-none text-sm"
                   value={store.selectedStartVerse}
                   onChange={(e) => {
-                    const val = parseInt(e.target.value);
-                    if (!isNaN(val)) store.setSelectedStartVerse(val);
+                    const valStr = e.target.value;
+                    if (valStr === '') {
+                      store.setSelectedStartVerse('');
+                    } else {
+                      const val = parseInt(valStr);
+                      if (!isNaN(val)) store.setSelectedStartVerse(val);
+                    }
                   }}
                 />
               </div>
@@ -80,11 +99,17 @@ export default function EditorPage() {
                 <label className="block text-sm mb-1 text-neutral-400">إلى آية</label>
                 <input 
                   type="number" min="1" max={store.selectedSurah?.verses_count || 1}
+                  placeholder="النهاية"
                   className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-2 outline-none text-sm"
                   value={store.selectedEndVerse}
                   onChange={(e) => {
-                    const val = parseInt(e.target.value);
-                    if (!isNaN(val)) store.setSelectedEndVerse(val);
+                    const valStr = e.target.value;
+                    if (valStr === '') {
+                      store.setSelectedEndVerse('');
+                    } else {
+                      const val = parseInt(valStr);
+                      if (!isNaN(val)) store.setSelectedEndVerse(val);
+                    }
                   }}
                 />
               </div>

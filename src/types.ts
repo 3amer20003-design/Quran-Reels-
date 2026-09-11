@@ -38,8 +38,8 @@ export interface Reciter {
 
 export interface EditorState {
   selectedSurah: Surah | null;
-  selectedStartVerse: number;
-  selectedEndVerse: number;
+  selectedStartVerse: number | '';
+  selectedEndVerse: number | '';
   selectedReciter: Reciter | null;
   verses: Verse[];
   

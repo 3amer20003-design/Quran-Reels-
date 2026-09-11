@@ -165,7 +165,7 @@ export default function VideoCanvas() {
          }
          if (currentLine.length > 0) lines.push(currentLine);
          
-         const hasOverlay = store.overlayText && store.overlayTextType !== 'none';
+         const hasOverlay = store.overlayTextType !== 'none';
          const startY = HEIGHT / 2 - ((lines.length - 1) * (store.fontSize * 1.5)) / 2 - (hasOverlay ? 100 : 0);
          
          lines.forEach((line, lineIdx) => {
