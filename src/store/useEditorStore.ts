@@ -15,6 +15,7 @@ interface EditorActions {
   setBackgroundVideo: (url: string | null) => void;
   setBackgroundMedia: (url: string | null, type: 'video' | 'image' | null) => void;
   setOverlayTextType: (type: 'tafsir' | 'translation' | 'none') => void;
+  setCustomAudioUrl: (url: string | null) => void;
 }
 
 export const useEditorStore = create<EditorState & EditorActions>((set) => ({
@@ -23,6 +24,7 @@ export const useEditorStore = create<EditorState & EditorActions>((set) => ({
   selectedEndVerse: '',
   selectedReciter: null,
   verses: [],
+  customAudioUrl: null,
   
   fontFamily: 'Amiri, serif',
   fontSize: 48,
@@ -37,7 +39,7 @@ export const useEditorStore = create<EditorState & EditorActions>((set) => ({
   setSelectedSurah: (surah) => set({ selectedSurah: surah, selectedStartVerse: '', selectedEndVerse: '' }),
   setSelectedStartVerse: (num) => set({ selectedStartVerse: num }),
   setSelectedEndVerse: (num) => set({ selectedEndVerse: num }),
-  setSelectedReciter: (reciter) => set({ selectedReciter: reciter }),
+  setSelectedReciter: (reciter) => set({ selectedReciter: reciter, customAudioUrl: null }),
   setVerses: (verses) => set({ verses }),
   setFontFamily: (font) => set({ fontFamily: font }),
   setFontSize: (size) => set({ fontSize: size }),
@@ -47,4 +49,5 @@ export const useEditorStore = create<EditorState & EditorActions>((set) => ({
   setBackgroundVideo: (url) => set({ backgroundVideoUrl: url, backgroundMediaType: 'video' }),
   setBackgroundMedia: (url, type) => set({ backgroundVideoUrl: url, backgroundMediaType: type }),
   setOverlayTextType: (type) => set({ overlayTextType: type }),
+  setCustomAudioUrl: (url) => set({ customAudioUrl: url }),
 }));

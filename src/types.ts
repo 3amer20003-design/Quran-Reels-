@@ -42,6 +42,7 @@ export interface EditorState {
   selectedEndVerse: number | '';
   selectedReciter: Reciter | null;
   verses: Verse[];
+  customAudioUrl: string | null;
   
   // Customization
   fontFamily: string;

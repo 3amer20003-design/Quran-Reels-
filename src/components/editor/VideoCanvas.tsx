@@ -23,6 +23,16 @@ export default function VideoCanvas() {
   
   // Audio playback queue
   const playNextVerse = () => {
+    if (store.customAudioUrl) {
+      // Custom audio covers everything, so if it ends, just stop
+      setIsPlaying(false);
+      if (videoRef.current) videoRef.current.pause();
+      if (isRecording && mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
+      return;
+    }
+    
     if (currentVerseIndex + 1 < store.verses.length) {
       setCurrentVerseIndex(prev => prev + 1);
     } else {
@@ -37,14 +47,21 @@ export default function VideoCanvas() {
   const playPromiseRef = useRef<Promise<void> | void>();
 
   useEffect(() => {
-    if (!audioRef.current || !store.verses[currentVerseIndex]) return;
-    const verse = store.verses[currentVerseIndex];
-    if (!verse.audio?.url) return;
-
-    const newSrc = `https://audio.qurancdn.com/${verse.audio.url}`;
-    if (audioRef.current.src !== newSrc) {
-      audioRef.current.src = newSrc;
-      audioRef.current.load();
+    if (!audioRef.current) return;
+    
+    if (store.customAudioUrl) {
+       if (audioRef.current.src !== store.customAudioUrl) {
+           audioRef.current.src = store.customAudioUrl;
+           audioRef.current.load();
+       }
+    } else {
+       const verse = store.verses[currentVerseIndex];
+       if (!verse?.audio?.url) return;
+       const newSrc = `https://audio.qurancdn.com/${verse.audio.url}`;
+       if (audioRef.current.src !== newSrc) {
+         audioRef.current.src = newSrc;
+         audioRef.current.load();
+       }
     }
     
     if (isPlaying) {
@@ -53,7 +70,7 @@ export default function VideoCanvas() {
         playPromiseRef.current.catch(e => console.error("Audio play error", e));
       }
     }
-  }, [currentVerseIndex, store.verses]); // isPlaying removed to prevent reloading on toggle
+  }, [currentVerseIndex, store.verses, store.customAudioUrl, isPlaying]);
 
   // Main Render Loop
   useEffect(() => {
@@ -116,15 +133,39 @@ export default function VideoCanvas() {
       }
 
       // 2. Find current active word
-      const currentVerse = store.verses[currentVerseIndex];
+      let activeVerseToRender = store.verses[currentVerseIndex];
       let activeWordIndex = -1;
       
-      if (currentVerse && audioRef.current && isPlaying) {
+      if (store.customAudioUrl && audioRef.current && isPlaying) {
+         const currentTimeMs = audioRef.current.currentTime * 1000;
+         let foundVerse = -1;
+         let foundWord = -1;
+         for (let v = 0; v < store.verses.length; v++) {
+             const segments = store.verses[v].audio?.segments || [];
+             for (const seg of segments) {
+                 if (currentTimeMs >= seg[2] && currentTimeMs <= seg[3]) {
+                     foundVerse = v;
+                     foundWord = seg[0];
+                     break;
+                 }
+             }
+             if (foundVerse !== -1) break;
+         }
+         
+         // If a word is currently being spoken, display its verse.
+         // Otherwise, fallback to either the first verse or the last verse spoken (using currentVerseIndex)
+         if (foundVerse !== -1) {
+             activeVerseToRender = store.verses[foundVerse];
+             activeWordIndex = foundWord;
+             // We update the local state without causing a re-render loop
+             if (currentVerseIndex !== foundVerse) {
+                 setCurrentVerseIndex(foundVerse);
+             }
+         }
+      } else if (activeVerseToRender && audioRef.current && isPlaying) {
         const currentTimeMs = audioRef.current.currentTime * 1000;
-        const segments = currentVerse.audio?.segments || [];
-        
+        const segments = activeVerseToRender.audio?.segments || [];
         for (const seg of segments) {
-          // seg: [word_index, next_word, start_ms, end_ms]
           if (currentTimeMs >= seg[2] && currentTimeMs <= seg[3]) {
              activeWordIndex = seg[0];
              break;
@@ -135,12 +176,12 @@ export default function VideoCanvas() {
       let arabicBottomY = HEIGHT / 2;
 
       // 3. Draw Quranic Text
-      if (currentVerse) {
+      if (activeVerseToRender) {
          ctx.font = `bold ${store.fontSize}px ${store.fontFamily}`;
          ctx.textAlign = 'center';
          ctx.textBaseline = 'middle';
          
-         const words = currentVerse.words;
+         const words = activeVerseToRender.words;
          let fullTextWidth = 0;
          
          // Calculate total width approx
@@ -207,9 +248,9 @@ export default function VideoCanvas() {
       }
 
       // 4. Draw Overlay Text (Tafsir/Translation) below Arabic text
-      const overlayTextToDraw = store.overlayTextType === 'tafsir' && currentVerse?.tafsirText
-                                ? `{ ${currentVerse.tafsirText} }`
-                                : store.overlayTextType === 'translation' ? currentVerse?.translationText 
+      const overlayTextToDraw = store.overlayTextType === 'tafsir' && activeVerseToRender?.tafsirText
+                                ? `{ ${activeVerseToRender.tafsirText} }`
+                                : store.overlayTextType === 'translation' ? activeVerseToRender?.translationText 
                                 : null;
 
       if (overlayTextToDraw && store.overlayTextType !== 'none') {

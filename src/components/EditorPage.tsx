@@ -4,6 +4,7 @@ import { useEditorStore } from '../store/useEditorStore';
 import { fetchSurahs, fetchReciters, fetchVerses } from '../lib/api';
 import { Surah, Reciter } from '../types';
 import VideoCanvas from './editor/VideoCanvas';
+import SyncStudio from './editor/SyncStudio';
 
 export default function EditorPage() {
   const [surahs, setSurahs] = useState<Surah[]>([]);
@@ -35,12 +36,20 @@ export default function EditorPage() {
 
     setIsLoadingVerses(true);
     try {
+      const actualReciterId = store.selectedReciter.id === -1 ? 7 : store.selectedReciter.id;
       const verses = await fetchVerses(
         store.selectedSurah.id,
         startNum,
         endNum,
-        store.selectedReciter.id
+        actualReciterId
       );
+      // If custom audio, reset the default segments
+      if (store.selectedReciter.id === -1) {
+        verses.forEach(v => {
+          if (!v.audio) v.audio = { url: '', segments: [] };
+          v.audio.segments = [];
+        });
+      }
       store.setVerses(verses);
     } catch (e) {
       console.error(e);
@@ -120,21 +129,46 @@ export default function EditorPage() {
               <select 
                 className="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-2 outline-none text-sm"
                 onChange={(e) => {
-                  const r = reciters.find(x => x.id === parseInt(e.target.value));
-                  store.setSelectedReciter(r || null);
+                  const val = parseInt(e.target.value);
+                  if (val === -1) {
+                    store.setSelectedReciter({ id: -1, reciter_name: 'صوت مخصص (مزامنة يدوية)', style: 'خاص' });
+                  } else {
+                    const r = reciters.find(x => x.id === val);
+                    store.setSelectedReciter(r || null);
+                  }
                 }}
                 value={store.selectedReciter?.id || ""}
               >
                 <option value="" disabled>اختر القارئ...</option>
+                <option value="-1" className="font-bold text-emerald-400">🎤 رفع صوت مخصص (مزامنة يدوية للقرّاء المحليين)</option>
                 {reciters.map(r => (
                   <option key={r.id} value={r.id}>{r.reciter_name} ({r.style})</option>
                 ))}
               </select>
+              
+              {store.selectedReciter?.id === -1 && (
+                <div className="mt-3 bg-neutral-950 p-3 rounded-lg border border-neutral-800">
+                  <label className="block text-sm mb-2 text-emerald-400 font-medium">اختر ملف الصوت (MP3/WAV)</label>
+                  <input 
+                    type="file" 
+                    accept="audio/*" 
+                    className="w-full text-sm text-neutral-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const url = URL.createObjectURL(file);
+                        store.setCustomAudioUrl(url);
+                      }
+                    }}
+                  />
+                  {store.customAudioUrl && <p className="text-xs text-emerald-500 mt-2">✓ تم تحميل الصوت بنجاح</p>}
+                </div>
+              )}
             </div>
 
             <button 
               onClick={handleApplySelection}
-              disabled={!store.selectedSurah || !store.selectedReciter || isLoadingVerses}
+              disabled={!store.selectedSurah || !store.selectedReciter || isLoadingVerses || (store.selectedReciter.id === -1 && !store.customAudioUrl)}
               className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium py-2 rounded-lg transition-colors flex justify-center items-center gap-2"
             >
               {isLoadingVerses ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -142,6 +176,8 @@ export default function EditorPage() {
             </button>
           </div>
         </div>
+
+        <SyncStudio />
 
         {store.verses.length > 0 && (
           <div className="bg-neutral-800 p-4 rounded-xl border border-emerald-900 relative overflow-hidden">
