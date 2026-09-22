@@ -5,12 +5,14 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useAuthStore } from './store/useAuthStore';
 import EditorPage from './components/EditorPage';
 import AuthModal from './components/AuthModal';
+import SplashScreen from './components/SplashScreen';
 import { User as UserIcon, LogOut, LogIn, Loader2 } from 'lucide-react';
 
 export default function App() {
   const { user, loading, setUser, setLoading } = useAuthStore();
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     initFirebase().then((success) => {
@@ -110,6 +112,14 @@ export default function App() {
             <Route path="/" element={<EditorPage />} />
           </Routes>
         </main>
+
+        {/* 8-second Splash Screen */}
+        {showSplash && (
+          <SplashScreen 
+            duration={8000} 
+            onFinish={() => setShowSplash(false)} 
+          />
+        )}
 
         {/* Auth Modal */}
         <AuthModal 
