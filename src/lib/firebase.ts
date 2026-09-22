@@ -1,31 +1,55 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import configJson from "../../firebase-applet-config.json";
 
-// Automatically injected by the AI Studio environment via set_up_firebase
-// and available globally if metadata.json is correct, but since we are in Vite
-// we might need to fetch the config or assume it's set in env if deployed.
-// Let's rely on standard Vite env variables if provided, but AI Studio injects
-// a firebase-applet-config.json file in the root if set_up_firebase was called!
-// Let's fetch it at runtime or import it if Vite allows.
+// Direct embedded configuration as fallback and Vite bundle target
+const metaEnv = (import.meta as any).env || {};
+
+const firebaseConfig = {
+  apiKey: metaEnv.VITE_FIREBASE_API_KEY || configJson.apiKey,
+  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || configJson.authDomain,
+  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || configJson.projectId,
+  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || configJson.storageBucket,
+  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || configJson.messagingSenderId,
+  appId: metaEnv.VITE_FIREBASE_APP_ID || configJson.appId,
+  measurementId: metaEnv.VITE_FIREBASE_MEASUREMENT_ID || configJson.measurementId,
+};
 
 let app: any;
 let auth: any;
 let db: any;
 let storage: any;
 
-export async function initFirebase() {
-  try {
-    const res = await fetch('/firebase-applet-config.json');
-    const config = await res.json();
-    app = initializeApp(config);
+// Eagerly initialize Firebase so auth and db are ready immediately
+try {
+  if (firebaseConfig.apiKey) {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
+  }
+} catch (e) {
+  console.warn("Eager Firebase initialization failed:", e);
+}
+
+export async function initFirebase(): Promise<boolean> {
+  try {
+    if (!app) {
+      let config = firebaseConfig;
+      if (!config.apiKey) {
+        const res = await fetch('/firebase-applet-config.json');
+        config = await res.json();
+      }
+      app = !getApps().length ? initializeApp(config) : getApp();
+    }
+    if (!auth) auth = getAuth(app);
+    if (!db) db = getFirestore(app);
+    if (!storage) storage = getStorage(app);
     return true;
   } catch (e) {
-    console.warn("Firebase config not found, skipping init for now.", e);
+    console.error("Firebase init failed:", e);
     return false;
   }
 }

@@ -88,8 +88,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       onClose();
     } catch (err: any) {
       console.error(err);
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError('فشل تسجيل الدخول باستخدام Google.');
+      if (err.code === 'auth/unauthorized-domain') {
+        setError('هذا النطاق غير مصرح به في Firebase Console. يرجى إضافة رابط الموقع في Authentication > Settings > Authorized domains.');
+      } else if (err.code !== 'auth/popup-closed-by-user') {
+        setError(err.message || 'فشل تسجيل الدخول باستخدام Google.');
       }
     } finally {
       setIsLoading(false);
